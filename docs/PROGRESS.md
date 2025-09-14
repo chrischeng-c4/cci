@@ -17,7 +17,9 @@
 ### Core Infrastructure
 - ✅ CLI framework (Typer)
 - ✅ TUI framework (Textual)
-- 🚧 Configuration system (TOML) - partial
+- ✅ Configuration system (TOML)
+- ✅ Services directory structure
+- ✅ Utils directory with utilities
 - 📋 Logging system
 - 📋 Error handling
 
@@ -25,16 +27,20 @@
 - ✅ pytest setup
 - ✅ Test fixtures
 - ✅ Coverage configuration
-- 📋 Mock utilities
+- ✅ CLI command tests
+- ✅ TUI screen tests
+- 📋 Integration tests
 
 ## Phase 2: Core Features
 
 ### Git Worktree Management
-- 📋 Worktree creation
-- 📋 Worktree switching
-- 📋 Worktree deletion
-- 📋 Worktree status tracking
-- 📋 Worktree metadata
+- ✅ Worktree creation
+- ✅ Worktree switching
+- ✅ Worktree deletion
+- ✅ Worktree status tracking
+- ✅ Worktree locking/unlocking
+- ✅ Worktree pruning
+- ✅ CLI commands for all operations
 
 ### Project Management
 - ✅ Project registry
@@ -59,25 +65,32 @@
 ## Phase 3: User Interface
 
 ### CLI Commands
-- ✅ `cci` - Main dashboard
-- ✅ `cci <project>` - Open project
-- 📋 `cci worktree` - Manage worktrees
+- ✅ `cci` - Open current directory
+- ✅ `cci open <path>` - Open file or directory
+- ✅ `cci new` - Create new project
+- ✅ `cci list` - List projects
+- ✅ `cci remove` - Remove project
+- ✅ `cci worktree` - Manage worktrees (full suite)
 - 📋 `cci prompt` - Execute prompts
 - 📋 `cci config` - Configuration
 
 ### TUI Screens
-- ✅ Dashboard screen (welcome)
+- ✅ Welcome screen
+- ✅ File viewer/editor with syntax highlighting
+- ✅ Directory browser with tree view
 - 📋 Project view
-- 📋 Worktree manager
+- 📋 Worktree manager screen
 - 📋 Patch review
 - 📋 Settings screen
 
 ### UI Components
-- 📋 File tree widget
+- ✅ TextArea with syntax highlighting
+- ✅ Directory tree widget
+- ✅ Status bar (in file viewer)
+- ✅ Button bars for actions
 - 📋 Diff viewer
-- 📋 Status bar
 - 📋 Command palette
-- 📋 Help system
+- ✅ Basic help system
 
 ## Phase 4: Advanced Features
 
