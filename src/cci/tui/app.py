@@ -8,6 +8,8 @@ from textual.binding import Binding
 
 from cci import __version__
 from cci.tui.screens.welcome import WelcomeScreen
+from cci.tui.screens.file_viewer import FileViewerScreen
+from cci.tui.screens.directory_browser import DirectoryBrowserScreen
 
 
 class CCIApp(App):
@@ -53,11 +55,11 @@ class CCIApp(App):
     def on_mount(self) -> None:
         """Called when the app is mounted."""
         if self.file_path:
-            # TODO: Open file editor/viewer screen
-            self.push_screen(WelcomeScreen())  # Placeholder for now
+            # Open file editor/viewer screen
+            self.push_screen(FileViewerScreen(self.file_path))
         elif self.directory_path:
-            # TODO: Open directory browser screen
-            self.push_screen(WelcomeScreen())  # Placeholder for now
+            # Open directory browser screen
+            self.push_screen(DirectoryBrowserScreen(self.directory_path))
         else:
             # Show welcome screen with recent files/directories
             self.push_screen(WelcomeScreen())

@@ -13,7 +13,9 @@
       "WebFetch(domain:www.anthropic.com)",
       "Read(//Users/chrischeng/.claude/commands/**)",
       "Bash(test -d .git)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

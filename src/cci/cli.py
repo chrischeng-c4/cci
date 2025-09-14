@@ -1,11 +1,12 @@
 """CCI Command Line Interface."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import typer
 from rich import print
 from rich.console import Console
+from rich.table import Table
 
 from cci import __version__
 
@@ -195,6 +196,249 @@ def remove(
         console.print(f"[green]✓[/green] Project '{name}' removed from registry")
     else:
         console.print(f"[red]Error:[/red] Project '{name}' not found")
+        raise typer.Exit(1)
+
+
+# Create a sub-application for worktree commands
+worktree_app = typer.Typer(
+    name="worktree",
+    help="Manage git worktrees",
+    add_completion=False,
+)
+
+app.add_typer(worktree_app, name="worktree")
+
+
+@worktree_app.command(name="list")
+def worktree_list(
+    show_all: bool = typer.Option(False, "--all", "-a", help="Include main worktree"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+) -> None:
+    """List all git worktrees for the current repository."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        worktrees = worktree_manager.list_worktrees(include_main=show_all)
+
+        if not worktrees:
+            console.print("[yellow]No worktrees found.[/yellow]")
+            return
+
+        if verbose:
+            # Detailed table view
+            table = Table(title="Git Worktrees", show_header=True, header_style="bold cyan")
+            table.add_column("Path", style="green")
+            table.add_column("Branch", style="yellow")
+            table.add_column("Commit", style="dim")
+            table.add_column("Status", style="cyan")
+            table.add_column("Type", style="magenta")
+
+            for wt in worktrees:
+                wt_type = "main" if wt.is_main else "worktree"
+                table.add_row(
+                    str(wt.path),
+                    wt.branch or "[detached]",
+                    wt.commit[:8],
+                    wt.status.value,
+                    wt_type,
+                )
+
+            console.print(table)
+        else:
+            # Simple list view
+            console.print("\n[bold cyan]Git Worktrees:[/bold cyan]\n")
+            for wt in worktrees:
+                icon = "🏠" if wt.is_main else "🌳"
+                branch_info = f"({wt.branch})" if wt.branch else "[detached HEAD]"
+                console.print(f"  {icon} {wt.path} {branch_info}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to list worktrees: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="create")
+def worktree_create(
+    path: Path = typer.Argument(..., help="Path where the worktree will be created"),
+    branch: Optional[str] = typer.Option(None, "--branch", "-b", help="Existing branch to checkout"),
+    new_branch: Optional[str] = typer.Option(None, "--new-branch", "-B", help="Create and checkout new branch"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force creation even if path exists"),
+) -> None:
+    """Create a new git worktree."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        console.print(f"[cyan]Creating worktree at:[/cyan] {path}")
+
+        worktree_info = worktree_manager.create_worktree(
+            path=path,
+            branch=branch,
+            new_branch=new_branch,
+            force=force,
+        )
+
+        console.print(f"[green]✓[/green] Worktree created successfully!")
+        console.print(f"  Path: {worktree_info.path}")
+        if worktree_info.branch:
+            console.print(f"  Branch: {worktree_info.branch}")
+        console.print(f"  Commit: {worktree_info.commit[:8]}")
+
+        console.print(f"\n[cyan]To work in this worktree:[/cyan]")
+        console.print(f"  cd {worktree_info.path}")
+        console.print(f"  cci")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to create worktree: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="remove")
+def worktree_remove(
+    identifier: str = typer.Argument(..., help="Path or branch name of the worktree to remove"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force removal even with uncommitted changes"),
+) -> None:
+    """Remove a git worktree."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        # Get the worktree to confirm it exists
+        worktree = worktree_manager.get_worktree(identifier)
+        if not worktree:
+            console.print(f"[red]Error:[/red] Worktree '{identifier}' not found")
+            raise typer.Exit(1)
+
+        # Confirm removal
+        if not force:
+            confirm = typer.confirm(f"Remove worktree at {worktree.path}?")
+            if not confirm:
+                console.print("[yellow]Cancelled[/yellow]")
+                raise typer.Exit()
+
+        worktree_manager.remove_worktree(identifier, force=force)
+        console.print(f"[green]✓[/green] Worktree removed: {worktree.path}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to remove worktree: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="switch")
+def worktree_switch(
+    identifier: str = typer.Argument(..., help="Path or branch name of the worktree to switch to"),
+) -> None:
+    """Switch to a different worktree (shows path to cd to)."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        path = worktree_manager.switch_worktree(identifier)
+
+        console.print(f"[green]Worktree found at:[/green] {path}")
+        console.print(f"\n[cyan]To switch to this worktree, run:[/cyan]")
+        console.print(f"  cd {path}")
+        console.print(f"  cci")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to switch worktree: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="prune")
+def worktree_prune(
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be pruned without doing it"),
+) -> None:
+    """Prune worktrees that no longer exist on disk."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        pruned = worktree_manager.prune_worktrees(dry_run=dry_run)
+
+        if not pruned:
+            console.print("[green]No worktrees to prune.[/green]")
+        else:
+            action = "Would prune" if dry_run else "Pruned"
+            console.print(f"[yellow]{action} {len(pruned)} worktree(s):[/yellow]")
+            for path in pruned:
+                console.print(f"  - {path}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to prune worktrees: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="lock")
+def worktree_lock(
+    identifier: str = typer.Argument(..., help="Path or branch name of the worktree to lock"),
+    reason: Optional[str] = typer.Option(None, "--reason", "-r", help="Reason for locking"),
+) -> None:
+    """Lock a worktree to prevent automatic pruning."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        worktree_manager.lock_worktree(identifier, reason=reason)
+        console.print(f"[green]✓[/green] Worktree locked: {identifier}")
+        if reason:
+            console.print(f"  Reason: {reason}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to lock worktree: {e}")
+        raise typer.Exit(1)
+
+
+@worktree_app.command(name="unlock")
+def worktree_unlock(
+    identifier: str = typer.Argument(..., help="Path or branch name of the worktree to unlock"),
+) -> None:
+    """Unlock a previously locked worktree."""
+    try:
+        from cci.core.worktree import GitWorktree
+
+        cwd = Path.cwd()
+        worktree_manager = GitWorktree(cwd)
+
+        worktree_manager.unlock_worktree(identifier)
+        console.print(f"[green]✓[/green] Worktree unlocked: {identifier}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to unlock worktree: {e}")
         raise typer.Exit(1)
 
 
