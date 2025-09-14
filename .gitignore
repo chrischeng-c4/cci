@@ -1,0 +1,79 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+build/
+dist/
+wheels/
+*.egg-info/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Testing and Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# Type checking and linting
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# Logs
+logs/
+*.log
+
+# Reports
+reports/
+*.html
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# Documentation builds
+site/
+.mkdocs_cache/
+
+# UAT artifacts
+UAT_CHECKLIST.md
+test_uat.sh
+
+# Claude task tracking
+.claude/task-log.txt
+.claude/test-log.txt
+.claude/uat-log.txt
+.claude/security-log.txt
+.claude/errors.log
+.claude/deployment.log
+.claude/coverage.log
