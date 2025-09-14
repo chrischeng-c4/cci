@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(uv venv:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "Bash(ln:*)",
+      "Bash(uv build:*)",
+      "Bash(pip show:*)",
+      "Bash(git add:*)",
+      "Bash(echo:*)",
+      "WebFetch(domain:www.anthropic.com)",
+      "Read(//Users/chrischeng/.claude/commands/**)",
+      "Bash(test -d .git)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

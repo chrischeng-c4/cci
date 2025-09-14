@@ -1,0 +1,44 @@
+{
+  "hooks": {
+    "task-complete": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Task completed: {task_name}\" >> logs/tasks.log && osascript -e 'display notification \"Task: {task_name}\" with title \"✅ CCI Task Complete\"'",
+      "notify": true,
+      "description": "Notifies when an AI agent completes a task"
+    },
+    "tests-passed": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 🧪 All tests passed\" >> logs/tests.log && osascript -e 'display notification \"All tests passed successfully\" with title \"🧪 CCI Tests Passed\"'",
+      "notify": true,
+      "description": "Notifies when test suite passes"
+    },
+    "uat-ready": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 🎯 UAT Ready\" >> logs/uat.log && git log --oneline -5 >> logs/uat.log && osascript -e 'display notification \"Code is ready for User Acceptance Testing\" with title \"🎯 CCI UAT Ready\" sound name \"Glass\"'",
+      "notify": true,
+      "description": "Notifies when code is ready for user acceptance testing"
+    },
+    "security-check": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 🔒 Security scan complete\" >> logs/security.log",
+      "notify": false,
+      "description": "Logs security scan completion"
+    },
+    "build-success": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 📦 Build successful\" >> logs/build.log && osascript -e 'display notification \"Package built successfully\" with title \"📦 CCI Build Success\"'",
+      "notify": true,
+      "description": "Notifies on successful build"
+    },
+    "coverage-report": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 📊 Coverage report generated\" >> logs/coverage.log && uv run pytest --cov=cci --cov-report=term-missing --quiet 2>&1 | tail -10 >> logs/coverage.log",
+      "notify": false,
+      "description": "Generates coverage report"
+    },
+    "error-occurred": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] ❌ Error: {error_message}\" >> logs/errors.log && osascript -e 'display notification \"{error_message}\" with title \"❌ CCI Error\" sound name \"Basso\"'",
+      "notify": true,
+      "description": "Notifies when an error occurs"
+    },
+    "deployment-complete": {
+      "command": "mkdir -p logs && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Deployment complete: v{version}\" >> logs/deployment.log && osascript -e 'display notification \"Version {version} deployed successfully\" with title \"🚀 CCI Deployed\" sound name \"Hero\"'",
+      "notify": true,
+      "description": "Notifies when deployment is complete"
+    }
+  }
+}
