@@ -1,8 +1,10 @@
 # /review-project
 
-**Ultrathink-level project reviewer** that performs deep architectural analysis to evaluate CCI as a modern, stable, and powerful TUI IDE with native Claude Code integration. Generates comprehensive markdown reports saved to `docs/reviews/` directory.
+**Trunk-based ultrathink project reviewer** that creates a feature branch, performs deep architectural analysis to evaluate CCI as a modern, stable, and powerful TUI IDE with native Claude Code integration, and generates comprehensive markdown reports with frontmatter metadata saved to `docs/reviews/` directory.
 
-**Paired Command**: Use `/resolve-reviews` after running this command to systematically fix identified issues.
+**Paired Command**: Use `/resolve-reviews` after running this command to systematically fix identified issues on the same branch.
+
+**Branch Strategy**: Follows trunk-based development - creates `review/YYYY-MM-DD-HHMMSS` branch from main for the review process.
 
 ## Overview
 
@@ -19,8 +21,14 @@ Results are saved to `reviews/YYYY-MM-DD-HH-MM-review.md` with comprehensive met
 ## Usage
 
 ```bash
-# Full ultrathink review (comprehensive analysis)
+# Full ultrathink review (creates new branch, comprehensive analysis)
 /review-project
+
+# Quick review on current branch (no branch creation)
+/review-project --quick --no-branch
+
+# Review with custom branch name
+/review-project --branch=review/architecture-analysis
 
 # Quick review (faster, focused on critical areas)
 /review-project --quick
@@ -41,6 +49,8 @@ Results are saved to `reviews/YYYY-MM-DD-HH-MM-review.md` with comprehensive met
 ## Options
 
 - `--quick`: Fast review focusing on critical items only
+- `--branch=<name>`: Custom branch name (default: review/YYYY-MM-DD-HHMMSS)
+- `--no-branch`: Skip branch creation, work on current branch
 - `--focus=<area>`: Deep dive into specific area
   - `claude-integration`: Claude Code integration quality
   - `tui-quality`: Terminal UI implementation
@@ -156,9 +166,38 @@ Results are saved to `reviews/YYYY-MM-DD-HH-MM-review.md` with comprehensive met
 
 ## Review Output Structure
 
-### Generated Report: `reviews/YYYY-MM-DD-HH-MM-review.md`
+### Generated Report: `docs/reviews/YYYY-MM-DD-HH-MM-review.md`
 
 ```markdown
+---
+status: completed
+type: review-report
+branch: review/YYYY-MM-DD-HHMMSS
+commit: abc123def456
+started: 2025-01-17T14:30:22Z
+completed: 2025-01-17T14:35:45Z
+duration_seconds: 323
+health_score: 78
+claude_integration_score: 98
+tui_excellence_score: 85
+production_readiness: 72
+critical_issues: 5
+high_priority_issues: 8
+medium_priority_issues: 12
+low_priority_issues: 7
+total_issues: 32
+resolved: false
+resolution_status: pending
+pr_url: null
+issue_url: null
+files_analyzed: 127
+lines_of_code: 8456
+test_coverage: 63
+type_coverage: 87
+author: Claude Code
+tool_version: 1.0.0
+---
+
 # CCI Project Review - [Date]
 
 ## Executive Summary
@@ -453,14 +492,7 @@ Claude Prompt | Xms | <1000ms | ✅/⚠️/🔴
 
 ## Metadata
 
-- **Review Date**: [Date]
-- **Review Duration**: X seconds
-- **Files Analyzed**: X
-- **Lines of Code**: X
-- **Test Cases**: X
-- **Documentation Pages**: X
-- **Review Tool Version**: 1.0.0
-- **Reviewer**: Claude Code (Ultrathink Mode)
+[All metadata is now in frontmatter for machine readability]
 
 ---
 
@@ -468,6 +500,18 @@ Claude Prompt | Xms | <1000ms | ✅/⚠️/🔴
 ```
 
 ## Workflow Implementation
+
+### Phase 0: Branch Setup (Trunk-Based Development)
+```bash
+@workflow-coordinator: Setup review branch:
+1. Ensure git repo is clean (no uncommitted changes)
+2. Fetch latest from origin/main
+3. Create new branch from main: review/YYYY-MM-DD-HHMMSS
+   - Alternative: Use --branch=<name> if provided
+   - Skip if --no-branch flag is set
+4. Checkout to new review branch
+5. Log branch creation for review metadata
+```
 
 ### Phase 1: Ultrathink Analysis Orchestration
 ```bash
@@ -510,8 +554,28 @@ Claude Prompt | Xms | <1000ms | ✅/⚠️/🔴
 2. Calculate composite scores
 3. Generate actionable recommendations
 4. Create comparison if previous exists
-5. Format as comprehensive markdown
-6. Save to reviews/YYYY-MM-DD-HH-MM-review.md
+5. Add comprehensive frontmatter metadata:
+   - Branch name, commit SHA
+   - Issue counts by priority
+   - Scores and metrics
+   - Timestamps and status
+6. Format as comprehensive markdown with frontmatter
+7. Save to docs/reviews/YYYY-MM-DD-HH-MM-review.md
+8. Commit review report to branch
+```
+
+### Phase 5: Branch Management & Next Steps
+```bash
+@workflow-coordinator: Finalize review branch:
+1. Stage review report: git add docs/reviews/*.md
+2. Commit with message: "feat(review): project review YYYY-MM-DD"
+3. Push branch to origin (if remote exists)
+4. Create draft PR with review summary (optional)
+5. Update review frontmatter with PR link if created
+6. Provide instructions for next steps:
+   - Run /resolve-reviews on this branch to fix issues
+   - Or merge review to main if only documentation
+   - Or finalize PR for team review
 ```
 
 ## Advanced Features
@@ -542,7 +606,7 @@ Claude Prompt | Xms | <1000ms | ✅/⚠️/🔴
 
 ## Review Storage Structure
 ```
-reviews/
+docs/reviews/
 ├── 2025-01-16-10-30-review.md    # Full review
 ├── 2025-01-16-10-30-metrics.json # Metrics data
 ├── 2025-01-15-14-20-review.md    # Previous review
@@ -550,23 +614,37 @@ reviews/
 └── .review-history.json          # Review metadata and trends
 ```
 
-## Paired Workflow with /resolve-reviews
+## Paired Workflow with /resolve-reviews (Trunk-Based)
 
-### Review → Resolve → Validate Cycle
+### Review → Resolve → Validate → Merge Cycle
 ```bash
-# Step 1: Run comprehensive review
+# Step 1: Run comprehensive review (creates review branch)
 /review-project
-# → Generates: docs/reviews/YYYY-MM-DD-project-review.md
+# → Creates branch: review/YYYY-MM-DD-HHMMSS
+# → Generates: docs/reviews/YYYY-MM-DD-project-review.md with frontmatter
+# → Commits review to branch
 
-# Step 2: Resolve identified issues
+# Step 2: Resolve identified issues (on same branch)
 /resolve-reviews
+# → Reads frontmatter to get branch info
+# → Continues on review branch
 # → Fixes issues systematically by priority
+# → Updates frontmatter with resolution progress
+# → Commits fixes incrementally
 # → Updates: docs/reviews/YYYY-MM-DD-resolution-status.md
 
 # Step 3: Validate improvements
-/review-project --compare
+/review-project --compare --no-branch
 # → Shows progress since last review
+# → Updates frontmatter with validation results
 # → Confirms fixes are working
+
+# Step 4: Merge to main (after validation)
+git checkout main
+git merge review/YYYY-MM-DD-HHMMSS --no-ff
+git push origin main
+# → Or finalize PR for team review
+# → Update frontmatter with merge status
 ```
 
 ### Continuous Improvement Process
@@ -595,7 +673,7 @@ Repeat cycle until desired quality level achieved.
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
-/review-project --quick --metrics-only
+/review-project --quick --metrics-only --no-branch
 if [ $? -ne 0 ]; then
   echo "Project review failed. Run /resolve-reviews to fix issues."
   exit 1
@@ -620,10 +698,78 @@ A successful ultrathink review provides:
 6. **TUI Excellence Rating**: Terminal UI quality evaluation
 7. **Production Readiness**: Clear go/no-go assessment
 
+## Branch Management Examples
+
+### Example: Standard Review with Branch
+```bash
+$ /review-project
+
+🌿 Creating review branch from main...
+✅ Created and switched to: review/2025-01-17-143022
+🔍 Starting ultrathink analysis...
+[... review process ...]
+📊 Review complete! Report saved with frontmatter metadata.
+📋 Committed to branch: review/2025-01-17-143022
+
+Next steps:
+1. Run: /resolve-reviews  (to fix issues on this branch)
+2. Or: gh pr create --draft (to create draft PR for tracking)
+3. Or: git checkout main && git merge review/2025-01-17-143022 --no-ff
+```
+
+### Example: Quick Review Without Branch
+```bash
+$ /review-project --quick --no-branch
+
+🔍 Running quick review on current branch (main)...
+[... review process ...]
+📊 Review complete! Report saved to docs/reviews/
+⚠️ Note: No branch created, review on current branch
+```
+
+## Frontmatter Benefits
+
+The frontmatter in review reports enables:
+
+1. **Machine Readability**: Parse review data programmatically
+2. **Status Tracking**: Track resolution progress via `resolved` field
+3. **Branch Management**: Know which branch contains fixes
+4. **PR Integration**: Link to pull requests and issues
+5. **Metrics History**: Track improvement over time
+6. **Automation**: CI/CD can read scores and gate deployments
+
+### Example: Reading Frontmatter Programmatically
+```python
+import yaml
+import re
+
+def read_review_metadata(filepath):
+    with open(filepath, 'r') as f:
+        content = f.read()
+        # Extract frontmatter
+        match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+        if match:
+            metadata = yaml.safe_load(match.group(1))
+            return metadata
+    return None
+
+# Use in CI/CD
+metadata = read_review_metadata('docs/reviews/latest-review.md')
+if metadata['health_score'] < 70:
+    print(f"Health score {metadata['health_score']}% too low for deployment")
+    exit(1)
+```
+
 ## Output Examples
 
 ### Example: Excellent Project
 ```markdown
+---
+health_score: 92
+branch: review/2025-01-17-143022
+resolved: true
+---
+
 Project Health Score: 92%
 Claude Code Integration: 98% ✨
 TUI Excellence: 89%
@@ -654,8 +800,49 @@ Critical issues identified in error handling and memory management.
 4. **Act on Recommendations**: Implement suggested improvements
 5. **Compare Reviews**: Measure improvement velocity
 
+## Integration with Git Workflow
+
+### Automatic PR Creation
+```bash
+# Review with automatic draft PR
+/review-project --create-pr
+
+# Creates branch, runs review, and opens draft PR with:
+# - Review summary extracted from frontmatter
+# - Links to full review report
+# - Checklist of issues to resolve
+# - Updates frontmatter with PR URL
+```
+
+### Issue Tracking Integration
+```bash
+# Link review to GitHub issue
+/review-project --issue=123
+
+# Updates frontmatter with issue link
+# Comments on issue with review summary
+# Links PR to issue when created
+```
+
+### CI/CD Integration via Frontmatter
+```yaml
+# .github/workflows/review.yml
+- name: Check Review Metrics
+  run: |
+    python -c "
+    import yaml, re
+    with open('docs/reviews/latest-review.md') as f:
+        content = f.read()
+        match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+        if match:
+            data = yaml.safe_load(match.group(1))
+            if data['health_score'] < 70:
+                exit(1)
+    "
+```
+
 ## Conclusion
 
-The `/review-project` command provides ultrathink-level analysis to evaluate CCI as a modern TUI IDE with Claude Code integration, generating comprehensive reports that drive continuous improvement and ensure production readiness.
+The `/review-project` command provides trunk-based ultrathink-level analysis with comprehensive frontmatter metadata in review reports, enabling seamless integration with git workflows, automated CI/CD pipelines, and systematic issue resolution.
 
-*This enhanced review system ensures CCI achieves its vision as a powerful, modern TUI IDE with native Claude Code intelligence.*
+*This enhanced review system with frontmatter metadata ensures full traceability, machine readability, and integration with modern development workflows.*

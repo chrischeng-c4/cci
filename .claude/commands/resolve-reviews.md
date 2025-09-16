@@ -1,6 +1,6 @@
 # /resolve-reviews
 
-**Intelligent review resolution system** that pairs with `/review-project` to systematically address findings, fix issues, and track resolution progress. Reads review reports from `docs/reviews/` and orchestrates fixes through specialized agents.
+**Intelligent trunk-based review resolution system** that pairs with `/review-project` to systematically address findings, fix issues, and track resolution progress. Reads review reports with frontmatter metadata from `docs/reviews/`, continues work on the review branch, and orchestrates fixes through specialized agents.
 
 ## Overview
 
@@ -48,12 +48,32 @@ Acts as the **implementation partner** to `/review-project`:
 
 ## Resolution Workflow
 
+### Phase 0: Branch Context Recovery
+```markdown
+@workflow-coordinator: Recover branch context from frontmatter:
+
+1. **Read Review Frontmatter**
+   - Parse YAML frontmatter from latest review
+   - Extract branch name from `branch` field
+   - Get commit SHA from `commit` field
+   - Read issue counts and scores
+
+2. **Checkout Review Branch**
+   - Switch to review branch from frontmatter
+   - Verify branch is up to date
+   - Continue work in same branch context
+```
+
 ### Phase 1: Review Analysis & Planning
 ```markdown
 @review-analyzer: Parse and analyze review report:
 
-1. **Load Review Report**
+1. **Load Review Report with Metadata**
    - Read from docs/reviews/ (latest or specified)
+   - Parse frontmatter for metadata:
+     - branch, commit, pr_url, issue_url
+     - critical_issues, high_priority_issues counts
+     - health_score, test_coverage metrics
    - Parse executive summary and scores
    - Extract critical issues list
    - Identify actionable recommendations
@@ -221,6 +241,25 @@ Cleanup Strategy:
 ```markdown
 Create/Update: docs/reviews/YYYY-MM-DD-resolution-status.md
 
+---
+status: in_progress
+type: resolution-status
+parent_review: YYYY-MM-DD-HH-MM-review.md
+branch: review/YYYY-MM-DD-HHMMSS
+started: 2025-01-17T15:00:00Z
+last_updated: 2025-01-17T15:30:00Z
+total_issues: 32
+resolved_count: 12
+in_progress_count: 3
+remaining_count: 17
+resolution_percentage: 37.5
+critical_resolved: 3/5
+high_resolved: 5/8
+medium_resolved: 4/12
+commits_made: 7
+author: Claude Code
+---
+
 # Resolution Status for [Review Date]
 
 ## Progress Overview
@@ -275,7 +314,15 @@ After each resolution batch:
 
 #### 5.1 Update Original Review
 ```markdown
-Append to original review file:
+Update original review file's frontmatter:
+
+1. Change `resolved: false` to `resolved: true` when complete
+2. Update `resolution_status: pending` to `completed`
+3. Add `resolution_report: YYYY-MM-DD-resolution-report.md`
+4. Add `resolved_at: YYYY-MM-DDTHH:MM:SSZ`
+5. Update `pr_url` if PR was created
+
+Append to original review file content:
 
 ## Resolution Update - [Date]
 
@@ -300,6 +347,31 @@ Append to original review file:
 #### 5.2 Generate Resolution Report
 ```markdown
 Create: docs/reviews/YYYY-MM-DD-resolution-report.md
+
+---
+status: completed
+type: resolution-report
+parent_review: YYYY-MM-DD-HH-MM-review.md
+branch: review/YYYY-MM-DD-HHMMSS
+started: 2025-01-17T15:00:00Z
+completed: 2025-01-17T18:30:00Z
+duration_hours: 3.5
+total_issues_resolved: 28
+total_issues_remaining: 4
+resolution_rate: 87.5
+health_score_before: 42
+health_score_after: 78
+health_improvement: 36
+test_coverage_before: 63
+test_coverage_after: 85
+coverage_improvement: 22
+commits_made: 15
+files_changed: 47
+lines_added: 1234
+lines_removed: 567
+pr_url: https://github.com/user/cci/pull/123
+author: Claude Code
+---
 
 # Resolution Report
 
@@ -340,6 +412,8 @@ Successfully resolved X% of issues from [Review Date] review.
 Output:
 ```
 📋 Loading Review: 2025-01-16-project-review.md
+📊 Reading frontmatter metadata...
+🌿 Switching to branch: review/2025-01-16-143022
 Found 5 critical issues to resolve
 
 🔴 Critical Issues:
@@ -395,9 +469,17 @@ Starting Resolution...
 - Time Taken: 3.2 hours
 - Health Score: 42% → 78% (+36%)
 
-📄 Reports generated:
+📝 Updating review frontmatter:
+- Setting resolved: true
+- Adding resolution timestamp
+- Linking resolution report
+
+📄 Reports generated (with frontmatter):
 - docs/reviews/2025-01-16-resolution-status.md
 - docs/reviews/2025-01-16-resolution-report.md
+
+🌿 Still on branch: review/2025-01-16-143022
+Next: Create PR or merge to main
 ```
 
 ### Example 2: Category-Focused Resolution
@@ -459,43 +541,61 @@ No changes made (dry run mode)
 
 ## Integration with Review Workflow
 
-### Paired Command Design
+### Paired Command Design (Trunk-Based)
 ```markdown
-/review-project → /resolve-reviews
+/review-project → /resolve-reviews → merge
 
 1. **Review Phase** (/review-project)
+   - Creates review branch from main
    - Analyzes project comprehensively
    - Identifies all issues
-   - Generates review report
-   - Saves to docs/reviews/
+   - Generates review report with frontmatter
+   - Commits to review branch
+   - Saves branch info in frontmatter
 
 2. **Resolution Phase** (/resolve-reviews)
-   - Reads review report
+   - Reads review report frontmatter
+   - Checks out review branch from metadata
    - Plans fix strategy
    - Executes resolutions
-   - Updates review status
+   - Commits fixes incrementally
+   - Updates frontmatter with progress
+   - Stays on review branch
 
-3. **Validation Phase** (/review-project --compare)
-   - Re-runs review
-   - Compares with previous
+3. **Validation Phase** (/review-project --compare --no-branch)
+   - Re-runs review on current branch
+   - Compares with previous using frontmatter
    - Confirms improvements
+   - Updates frontmatter validation status
    - Documents progress
+
+4. **Merge Phase** (git commands or PR)
+   - Create PR: `gh pr create --title "Review fixes"`
+   - Or merge: `git checkout main && git merge review/... --no-ff`
+   - Update frontmatter with merge info
+   - Clean up review branch
 ```
 
-### Continuous Improvement Loop
+### Continuous Improvement Loop (Trunk-Based)
 ```bash
 # Iteration 1
-/review-project                    # Identify issues
-/resolve-reviews --priority=critical  # Fix critical issues
-/review-project --compare          # Verify improvements
+/review-project                    # Creates review branch, identify issues
+/resolve-reviews --priority=critical  # Fix critical issues on same branch
+/review-project --compare --no-branch # Verify improvements on same branch
 
-# Iteration 2
-/resolve-reviews --priority=high   # Fix high priority
-/review-project --compare          # Check progress
+# Iteration 2 (still on review branch)
+/resolve-reviews --priority=high   # Fix high priority on same branch
+/review-project --compare --no-branch # Check progress on same branch
 
-# Iteration 3
-/resolve-reviews --priority=medium # Polish remaining
-/review-project --compare          # Final validation
+# Iteration 3 (still on review branch)
+/resolve-reviews --priority=medium # Polish remaining on same branch
+/review-project --compare --no-branch # Final validation on same branch
+
+# Final: Merge to main
+git checkout main
+git merge review/YYYY-MM-DD-HHMMSS --no-ff -m "feat: resolved review issues"
+git push origin main
+git branch -d review/YYYY-MM-DD-HHMMSS  # Clean up local branch
 ```
 
 ## Resolution Strategies
@@ -532,6 +632,34 @@ Each resolution is atomic:
 5. Document any rollback
 ```
 
+## Frontmatter Integration Benefits
+
+### Automated Tracking
+```python
+# Example: CI/CD can check resolution status
+import yaml
+import re
+
+def check_resolution_status(review_file):
+    with open(review_file, 'r') as f:
+        content = f.read()
+        match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+        if match:
+            metadata = yaml.safe_load(match.group(1))
+            if metadata['resolved']:
+                print(f"✅ Review resolved with {metadata['health_score']}% health")
+                return True
+            else:
+                print(f"⏳ {metadata['critical_issues']} critical issues remaining")
+                return False
+```
+
+### Branch Continuity
+- Frontmatter ensures commands work on correct branch
+- No confusion about which branch has fixes
+- Clear lineage from review to resolution
+- Traceable history via git and frontmatter
+
 ## Success Metrics
 
 ### Resolution Success
@@ -539,7 +667,8 @@ Each resolution is atomic:
 - Validation passes for each fix
 - No regressions introduced
 - Improvements measurable
-- Documentation updated
+- Frontmatter updated with results
+- Branch ready for merge
 
 ### Quality Metrics
 - Health Score improvement
@@ -557,13 +686,18 @@ Each resolution is atomic:
 ## Best Practices
 
 1. **Start with Critical**: Always resolve critical issues first
-2. **Validate Often**: Check after each resolution batch
-3. **Document Everything**: Track what was fixed and how
-4. **Use Parallel**: Enable parallel for faster resolution
-5. **Compare Reviews**: Run review-project after resolution
-6. **Incremental Progress**: Resolve in priority batches
-7. **Track Metrics**: Monitor improvement trends
+2. **Stay on Branch**: Work consistently on review branch
+3. **Validate Often**: Check after each resolution batch
+4. **Update Frontmatter**: Keep metadata current
+5. **Document Everything**: Track what was fixed and how
+6. **Use Parallel**: Enable parallel for faster resolution
+7. **Compare Reviews**: Run review-project after resolution
+8. **Incremental Progress**: Resolve in priority batches
+9. **Track Metrics**: Monitor improvement trends via frontmatter
+10. **Clean Merge**: Use --no-ff for clear history
 
 ## Conclusion
 
-The `/resolve-reviews` command creates a systematic approach to addressing project issues identified by `/review-project`, ensuring continuous improvement through intelligent orchestration, specialized agents, and comprehensive tracking.
+The `/resolve-reviews` command creates a systematic trunk-based approach to addressing project issues identified by `/review-project`, leveraging frontmatter metadata for branch continuity, progress tracking, and seamless integration with git workflows. The frontmatter ensures machine-readable status that can be consumed by CI/CD pipelines, dashboards, and automation tools.
+
+*This enhanced resolution system with frontmatter tracking ensures full traceability, branch consistency, and integration with modern trunk-based development practices.*
