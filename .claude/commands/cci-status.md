@@ -1,55 +1,53 @@
 ---
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Task", "TodoWrite"]
 model: "claude-opus-4-1-20250805"
-description: "Show comprehensive CCI development status with project intelligence"
-argument-hint: "[--detail] [--focus=<area>]"
+description: "Show finding-based development dashboard with session progress and velocity metrics"
+argument-hint: "[--detail] [--session] [--metrics] [--focus=<area>]"
 thinking-level: "think"
-subagents: ["status-analyzer", "progress-tracker"]
+subagents: ["status-analyzer", "progress-tracker", "findings-processor"]
 project-aware: true
 ---
 
 # /cci-status
 
-think about providing comprehensive project status by analyzing git state, test coverage, code quality, and project memory from documentation.
+think about providing a comprehensive finding-based dashboard that shows current session progress, active findings, completion metrics, and intelligent recommendations for next actions.
 
-## Project Context Integration
+## Finding-Based Dashboard Architecture
 
-This command understands the CCI project structure and conventions:
-- Architecture: Git worktree-first IDE with prompt-driven patch workflow
-- Patterns: AI-first development model from CLAUDE.md
-- Memory: Reads docs/ for persistent context and current sprint status
-- Codebase: Aware of Python/Typer/Textual stack and UV tooling
+This command provides a comprehensive view of project progress through findings analysis:
+- **Findings**: Track actionable items from project reviews with status, priority, and effort estimates
+- **Sessions**: Track development sessions with goals, duration, and completion metrics
+- **Velocity**: Measure completion rates, time estimates accuracy, and productivity trends
+- **Integration**: Seamlessly integrates with project review workflow and git state
 
 ## Intelligent Execution Strategy
 
-### Phase 1: Deep Project Analysis
-Gather comprehensive status from multiple sources:
+### Phase 1: Finding Analysis & Dashboard Generation
 
-1. **Git Repository State**
-   - Current branch and remote tracking
-   - Uncommitted changes (staged/unstaged)
-   - Recent commits with semantic analysis
-   - Worktree status if applicable
+1. **Finding Discovery & Processing**
+   @findings-processor: Analyze finding ecosystem:
+   - Scan `docs/findings/*/` for finding files with frontmatter
+   - Parse finding metadata: status, priority, effort estimates
+   - Extract completion timestamps and session assignments
+   - Build finding dependency graph for impact analysis
 
-2. **Project Memory from Documentation**
-   @Task: Read and analyze project documentation:
-   - docs/STATUS.md for last known state
-   - docs/PROGRESS.md for feature completion tracking
-   - docs/development/CURRENT_SPRINT.md for active work
-   - docs/ISSUES.md for known blockers
-   - docs/development/TODO.md for upcoming tasks
+2. **Session Context Analysis**
+   @Task: Extract current session information:
+   - Parse `docs/SESSION.md` for current session goals and timeline
+   - Identify active review branch and session start time
+   - Calculate session duration and progress toward goals
+   - Extract session-specific finding assignments
 
-3. **Code Quality Metrics**
-   - Test coverage percentage and missing lines
-   - Linting issues by category (ruff statistics)
-   - Type checking status (mypy)
-   - Security vulnerabilities (if available)
+3. **Git Repository Integration**
+   - Current branch and commit status
+   - Review branch detection and merge readiness
+   - Changes since last finding completion
+   - Commit velocity and patterns
 
-4. **Development Velocity**
-   - Commits in last 24 hours/week
-   - Test additions/modifications
-   - Documentation updates
-   - Feature completion rate from PROGRESS.md
+4. **Quality & Coverage Metrics**
+   - Test coverage with finding impact correlation
+   - Code quality trends aligned with finding completion
+   - Build/deployment readiness indicators
 
 ### Phase 2: Strategic Status Compilation
 
