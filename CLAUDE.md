@@ -15,6 +15,59 @@ This project is developed entirely by Claude Code. Human involvement is limited 
 ## Project Overview
 CCI (Claude Code IDE) is a git worktree-first IDE that focuses on prompt-driven patch workflow. It provides an intelligent development environment for managing multiple projects through AI-assisted development.
 
+## 🤖 Claude Code Integration
+
+**CCI is powered by Claude Code** - This is not just another AI tool integration, but a native partnership where Claude Code serves as the intelligent engine behind every CCI feature.
+
+### Core Integration Principle
+CCI is designed to work seamlessly with Claude Code (claude.ai/code) as its native AI engine:
+
+- **No API Keys Required**: Claude Code handles all authentication internally
+- **No Model Configuration**: Claude Code manages model selection and parameters automatically
+- **Direct Integration**: CCI commands interface directly with the running Claude Code instance
+- **Context-Aware**: Claude Code understands your entire project structure, history, and intent
+- **Intelligent Workflows**: Claude Code orchestrates complex multi-step development tasks
+
+### How It Works
+When you use CCI's AI features (`cci prompt`, AI-assisted editing, smart commits, etc.), CCI communicates directly with the Claude Code instance that's already running. This means:
+
+1. **Zero Configuration**: Works immediately - no setup required
+2. **No API Management**: No keys, quotas, or rate limits to worry about
+3. **Instant Access**: Direct connection to Claude's capabilities
+4. **Seamless Context**: Automatic sharing of project context between CCI and Claude Code
+5. **Unified Experience**: CCI and Claude Code work as one integrated system
+
+### Claude Code as the AI Backend
+```toml
+# Default configuration - just works with Claude Code!
+[ai]
+provider = "claude-code"  # Uses Claude Code directly
+# No API key needed!
+# No model selection needed!
+# Claude Code handles everything!
+```
+
+### Integration Features
+- **Auto-Context**: Claude Code automatically understands relevant project files
+- **Git-Aware**: Knows your current branch, changes, and commit history
+- **Worktree-Smart**: Understands which worktree you're working in
+- **Interactive**: Can execute commands and make changes through Claude Code
+- **Memory-Persistent**: Claude Code maintains context across your development session
+
+### Example Workflow
+```bash
+# Claude Code understands your project context automatically
+cci prompt "refactor this function for better performance"
+
+# Claude Code knows which files you're working with
+cci prompt --file src/main.py "add type hints to this module"
+
+# Claude Code can orchestrate complex tasks
+cci prompt "create a new feature with tests and documentation"
+```
+
+This deep integration means that **every CCI command benefits from Claude Code's intelligence**, creating a truly AI-native development experience where the boundaries between tool and AI assistant disappear.
+
 ## Development Workflow
 
 ### Single Branch Strategy

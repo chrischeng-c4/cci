@@ -1,14 +1,45 @@
 ---
-allowed-tools: ["Bash", "Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Task", "TodoWrite", "WebSearch", "WebFetch"]
-model: "claude-sonnet-4-20250514"
-description: "Intelligent finding implementation with finding-based workflow and subagent orchestration"
-argument-hint: "[--from-review] [--finding=<id>] [--next] [--strategy=<type>] [--parallel]"
-thinking-level: "ultrathink"
-subagents: ["workflow-analyzer", "doc-optimizer", "architect", "implementer", "tester", "security-auditor", "performance-optimizer", "ui-designer", "documenter", "workflow-validator"]
-project-aware: true
+deprecated: true
+replaced-by: "/resolve-reviews"
+redirect-to: ".claude/commands/resolve-reviews.md"
 ---
 
-# /cci-implement
+# /cci-implement [DEPRECATED]
+
+⚠️ **This command has been replaced by `/resolve-reviews`**
+
+The functionality of `/cci-implement` has been enhanced and renamed to `/resolve-reviews` to better reflect its purpose as a paired command with `/review-project`.
+
+## Migration Guide
+
+### Old Command → New Command
+```bash
+# Old way
+/cci-implement --from-review
+
+# New way
+/resolve-reviews
+```
+
+### Key Improvements in `/resolve-reviews`:
+- Direct integration with review reports from `/review-project`
+- Systematic issue resolution by priority
+- Progress tracking in `docs/reviews/`
+- Validation after each fix
+- Parallel execution for faster resolution
+
+## Usage
+
+Please use the new command:
+```bash
+/resolve-reviews
+```
+
+For more information, see: `.claude/commands/resolve-reviews.md`
+
+---
+
+# Legacy Documentation Below (for reference only)
 
 ultrathink about creating an intelligent finding implementation workflow that seamlessly integrates with the finding-based project-review system and sophisticated subagent orchestration patterns.
 

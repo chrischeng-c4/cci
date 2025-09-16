@@ -15,7 +15,12 @@
       "Bash(test -d .git)",
       "Bash(git commit:*)",
       "Bash(tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git diff:*)",
+      "Bash(pytest:*)",
+      "Bash(sed:*)",
+      "Bash(cat:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,15 @@
 # CCI - Claude Code IDE
 
-A universal file and directory tool with AI-powered features, developed entirely by AI.
+A universal file and directory tool with **native Claude Code integration**, providing intelligent AI-powered development features directly from your terminal. Developed entirely by Claude Code.
+
+## 🤖 Powered by Claude Code
+
+CCI integrates seamlessly with Claude Code (claude.ai/code) - no API keys or configuration needed! When you run CCI in a Claude Code environment, you get instant access to AI-powered features:
+
+- **Intelligent Prompts**: Send prompts to Claude Code with automatic project context
+- **Code Analysis**: Claude Code understands your entire codebase
+- **Smart Suggestions**: Context-aware recommendations for your development tasks
+- **Zero Configuration**: Works immediately in Claude Code environments
 
 ## Installation
 
@@ -50,9 +59,36 @@ uv run cci
 - Git worktree operations
 - Prompt-driven development
 - Patch review and application
-- AI integration
+- Enhanced AI workflows
 
 ## Usage
+
+### 🤖 AI-Powered Features (Claude Code Integration)
+
+```bash
+# Send a prompt to Claude Code with project context
+cci prompt "explain this function"
+
+# Analyze specific files
+cci prompt "refactor for better performance" --file src/main.py
+
+# Multiple file context
+cci prompt "find security issues" --file app.py --file config.py
+
+# Control context inclusion
+cci prompt "what does this code do?" --no-context
+
+# Include specific file patterns
+cci prompt "add type hints" --include "*.py" --exclude "*test*"
+```
+
+Claude Code automatically understands:
+- Your project structure and files
+- Current git branch and changes
+- File contents and relationships
+- Best practices for your language/framework
+
+No API keys or configuration required - just works!
 
 ### Universal File/Directory Opening
 

@@ -213,9 +213,10 @@ uv run pytest --cov=cci --cov-report=term-missing
 ## 📊 Test Quality Metrics
 
 ### Coverage Goals
-- Unit Tests: 90%+
-- Integration Tests: 80%+
-- Overall: 85%+
+- Unit Tests: 90%+ (current: varies 92-98% for utils, 45% for CLI)
+- Integration Tests: 80%+ (not yet implemented)
+- Overall: 75%+ (current: 59%, target achievable with fixes)
+- TUI Tests: Fix 10 failing tests first, then target 80%
 
 ### Performance Benchmarks
 - Unit test suite: < 5 seconds

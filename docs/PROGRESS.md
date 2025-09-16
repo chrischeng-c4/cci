@@ -27,20 +27,20 @@
 - ✅ pytest setup
 - ✅ Test fixtures
 - ✅ Coverage configuration
-- ✅ CLI command tests
-- ✅ TUI screen tests
+- 🚧 CLI command tests (45% coverage, needs improvement)
+- 🚧 TUI screen tests (10 failing tests, needs fixes)
 - 📋 Integration tests
 
 ## Phase 2: Core Features
 
 ### Git Worktree Management
-- ✅ Worktree creation
-- ✅ Worktree switching
-- ✅ Worktree deletion
-- ✅ Worktree status tracking
-- ✅ Worktree locking/unlocking
-- ✅ Worktree pruning
-- ✅ CLI commands for all operations
+- 📋 Worktree creation
+- 📋 Worktree switching
+- 📋 Worktree deletion
+- 📋 Worktree status tracking
+- 📋 Worktree locking/unlocking
+- 📋 Worktree pruning
+- 📋 CLI commands for all operations
 
 ### Project Management
 - ✅ Project registry
@@ -70,27 +70,27 @@
 - ✅ `cci new` - Create new project
 - ✅ `cci list` - List projects
 - ✅ `cci remove` - Remove project
-- ✅ `cci worktree` - Manage worktrees (full suite)
+- 📋 `cci worktree` - Manage worktrees (not implemented)
 - 📋 `cci prompt` - Execute prompts
 - 📋 `cci config` - Configuration
 
 ### TUI Screens
-- ✅ Welcome screen
-- ✅ File viewer/editor with syntax highlighting
-- ✅ Directory browser with tree view
+- 🚧 Welcome screen (implemented but tests failing)
+- 🚧 File viewer/editor (implemented but tests failing)
+- 🚧 Directory browser (implemented but tests failing)
 - 📋 Project view
 - 📋 Worktree manager screen
 - 📋 Patch review
 - 📋 Settings screen
 
 ### UI Components
-- ✅ TextArea with syntax highlighting
-- ✅ Directory tree widget
-- ✅ Status bar (in file viewer)
-- ✅ Button bars for actions
+- 🚧 TextArea with syntax highlighting (implemented but tests failing)
+- 🚧 Directory tree widget (implemented but tests failing)
+- 🚧 Status bar (in file viewer, tests failing)
+- 🚧 Button bars for actions (tests failing)
 - 📋 Diff viewer
 - 📋 Command palette
-- ✅ Basic help system
+- 📋 Basic help system
 
 ## Phase 4: Advanced Features
 
@@ -138,14 +138,14 @@
 
 | Phase | Total | Complete | In Progress | Planned | Blocked |
 |-------|-------|----------|-------------|---------|---------|
-| Phase 1 | 14 | 12 | 1 | 1 | 0 |
-| Phase 2 | 17 | 4 | 0 | 13 | 0 |
-| Phase 3 | 15 | 3 | 0 | 12 | 0 |
+| Phase 1 | 14 | 10 | 3 | 1 | 0 |
+| Phase 2 | 17 | 3 | 0 | 14 | 0 |
+| Phase 3 | 15 | 5 | 7 | 3 | 0 |
 | Phase 4 | 15 | 0 | 0 | 15 | 0 |
 | Phase 5 | 12 | 0 | 0 | 12 | 0 |
-| **Total** | **73** | **19** | **1** | **53** | **0** |
+| **Total** | **73** | **18** | **10** | **45** | **0** |
 
-### Overall Progress: 26.0% Complete
+### Overall Progress: 24.7% Complete (18 complete + 5 partial credit for in-progress)
 
 ---
 *Updated automatically as features are implemented*
