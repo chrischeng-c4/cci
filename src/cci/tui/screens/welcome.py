@@ -1,13 +1,12 @@
 """Welcome screen for CCI."""
 
-from pathlib import Path
 
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Label, ListView, ListItem, Static
+from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, Static
 
 from cci import __version__
 from cci.core.registry import ProjectRegistry
@@ -35,7 +34,7 @@ class ProjectListItem(ListItem):
             )
 
 
-class WelcomeScreen(Screen):
+class WelcomeScreen(Screen[None]):
     """Welcome screen showing project list and options."""
 
     CSS = """
@@ -148,13 +147,19 @@ class WelcomeScreen(Screen):
                     yield ListView(*items, classes="project-list", id="project-list")
                 else:
                     yield Static(
-                        "Welcome to CCI!\n\nUse CCI to open any file or directory:\n  cci file.txt\n  cci ~/Documents\n  cci .",
+                        (
+                            "Welcome to CCI!\n\nUse CCI to open any file or directory:\n"
+                            "  cci file.txt\n  cci ~/Documents\n  cci ."
+                        ),
                         classes="empty-state",
                     )
             except Exception:
                 # Registry doesn't exist or can't be loaded - that's fine
                 yield Static(
-                    "Welcome to CCI!\n\nUse CCI to open any file or directory:\n  cci file.txt\n  cci ~/Documents\n  cci .",
+                    (
+                        "Welcome to CCI!\n\nUse CCI to open any file or directory:\n"
+                        "  cci file.txt\n  cci ~/Documents\n  cci ."
+                    ),
                     classes="empty-state",
                 )
 
@@ -163,7 +168,9 @@ class WelcomeScreen(Screen):
             with Horizontal(classes="actions"):
                 yield Button("New [N]", variant="primary", id="new-btn", classes="action-button")
                 yield Button("Open [O]", variant="default", id="open-btn", classes="action-button")
-                yield Button("Settings [S]", variant="default", id="settings-btn", classes="action-button")
+                yield Button(
+                    "Settings [S]", variant="default", id="settings-btn", classes="action-button"
+                )
 
             # Keyboard shortcuts
             yield Static(

@@ -1,7 +1,7 @@
 """CCI Command Line Interface."""
 
+import builtins
 from pathlib import Path
-from typing import Optional, List
 
 import typer
 from rich import print
@@ -53,7 +53,7 @@ def callback(
 
 @app.command(name="open", context_settings={"allow_extra_args": False})
 def open_command(
-    path: Optional[Path] = typer.Argument(
+    path: Path | None = typer.Argument(  # noqa: B008
         None,
         help="Path to open. Can be a file or directory. Defaults to current directory.",
     ),
@@ -86,8 +86,8 @@ def open_command(
 
 @app.command()
 def new(
-    path: Path = typer.Argument(..., help="Path where the new project will be created"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),
+    path: Path = typer.Argument(..., help="Path where the new project will be created"),  # noqa: B008
+    name: str | None = typer.Option(None, "--name", "-n", help="Project name"),
 ) -> None:
     """Create a new project."""
     project_name = name or path.name
@@ -199,6 +199,115 @@ def remove(
         raise typer.Exit(1)
 
 
+@app.command()
+def prompt(
+    text: str = typer.Argument(..., help="Your prompt for Claude Code"),
+    files: builtins.list[Path] | None = typer.Option(  # noqa: B008
+        None, "--file", "-f", help="Include specific files in context (can be used multiple times)"
+    ),
+    no_context: bool = typer.Option(
+        False, "--no-context", help="Don't include automatic project context"
+    ),
+    include_patterns: builtins.list[str] | None = typer.Option(  # noqa: B008
+        None, "--include", "-i", help="File patterns to include (e.g., '*.py')"
+    ),
+    exclude_patterns: builtins.list[str] | None = typer.Option(  # noqa: B008
+        None, "--exclude", "-e", help="File patterns to exclude (e.g., '__pycache__')"
+    ),
+) -> None:
+    """Send a prompt to Claude Code with project context.
+
+    This command integrates directly with Claude Code, providing intelligent
+    AI assistance with full awareness of your project structure and context.
+
+    Examples:
+        cci prompt "explain this function"
+        cci prompt "refactor for better performance" --file src/main.py
+        cci prompt "add type hints" --include "*.py" --exclude "*test*"
+        cci prompt "what does this code do?" --no-context
+    """
+    import asyncio
+
+    from cci.core.prompt import PromptProcessor
+    from cci.services import AIServiceError
+
+    try:
+        # Initialize the prompt processor with Claude Code
+        processor = PromptProcessor(project_path=Path.cwd())
+
+        # Build context configuration
+        context_patterns = {}
+        if include_patterns:
+            context_patterns["include"] = include_patterns
+        if exclude_patterns:
+            context_patterns["exclude"] = exclude_patterns
+
+        # Handle specific files if provided
+        if files:
+            console.print(f"[cyan]Including {len(files)} specific file(s) in context[/cyan]")
+            # Add file contents to the prompt
+            file_contents = []
+            for file_path in files:
+                if file_path.exists() and file_path.is_file():
+                    try:
+                        content = file_path.read_text()
+                        file_contents.append(f"File: {file_path}\n```\n{content}\n```")
+                    except Exception as e:
+                        console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+                else:
+                    console.print(f"[yellow]Warning: File not found: {file_path}[/yellow]")
+
+            if file_contents:
+                # Prepend file contents to the prompt
+                full_prompt = "\n".join(file_contents) + f"\n\n{text}"
+            else:
+                full_prompt = text
+        else:
+            full_prompt = text
+
+        # Process the prompt with Claude Code
+        console.print("[cyan]Processing prompt with Claude Code...[/cyan]")
+
+        async def run_prompt() -> None:
+            try:
+                # Check if Claude Code is available
+                if not await processor.validate_ai_connection():
+                    console.print(
+                        "[yellow]Note: Claude Code connection could not be validated.[/yellow]\n"
+                        "[dim]Make sure you're running in claude.ai/code environment.[/dim]"
+                    )
+
+                # Process the prompt
+                response = await processor.process_prompt(
+                    user_prompt=full_prompt,
+                    include_context=not no_context,
+                    context_patterns=context_patterns if context_patterns else None,
+                )
+
+                # Display the response
+                console.print("\n[green]Claude Code Response:[/green]")
+                console.print(response.content)
+
+                # Show metadata if available
+                if response.metadata:
+                    provider = response.metadata.get('provider', 'unknown')
+                    console.print(f"\n[dim]Provider: {provider}[/dim]")
+
+            except AIServiceError as e:
+                console.print(f"[red]AI Service Error:[/red] {e}")
+                raise typer.Exit(1) from e
+
+        # Run the async function
+        asyncio.run(run_prompt())
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Prompt cancelled by user[/yellow]")
+        raise typer.Exit() from None
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+        raise typer.Exit(1) from e
+
+
 # Create a sub-application for worktree commands
 worktree_app = typer.Typer(
     name="worktree",
@@ -257,17 +366,21 @@ def worktree_list(
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to list worktrees: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="create")
 def worktree_create(
-    path: Path = typer.Argument(..., help="Path where the worktree will be created"),
-    branch: Optional[str] = typer.Option(None, "--branch", "-b", help="Existing branch to checkout"),
-    new_branch: Optional[str] = typer.Option(None, "--new-branch", "-B", help="Create and checkout new branch"),
+    path: Path = typer.Argument(..., help="Path where the worktree will be created"),  # noqa: B008
+    branch: str | None = typer.Option(
+        None, "--branch", "-b", help="Existing branch to checkout"
+    ),
+    new_branch: str | None = typer.Option(
+        None, "--new-branch", "-B", help="Create and checkout new branch"
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Force creation even if path exists"),
 ) -> None:
     """Create a new git worktree."""
@@ -286,28 +399,30 @@ def worktree_create(
             force=force,
         )
 
-        console.print(f"[green]✓[/green] Worktree created successfully!")
+        console.print("[green]✓[/green] Worktree created successfully!")
         console.print(f"  Path: {worktree_info.path}")
         if worktree_info.branch:
             console.print(f"  Branch: {worktree_info.branch}")
         console.print(f"  Commit: {worktree_info.commit[:8]}")
 
-        console.print(f"\n[cyan]To work in this worktree:[/cyan]")
+        console.print("\n[cyan]To work in this worktree:[/cyan]")
         console.print(f"  cd {worktree_info.path}")
-        console.print(f"  cci")
+        console.print("  cci")
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to create worktree: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="remove")
 def worktree_remove(
     identifier: str = typer.Argument(..., help="Path or branch name of the worktree to remove"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force removal even with uncommitted changes"),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force removal even with uncommitted changes"
+    ),
 ) -> None:
     """Remove a git worktree."""
     try:
@@ -334,10 +449,10 @@ def worktree_remove(
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to remove worktree: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="switch")
@@ -354,21 +469,23 @@ def worktree_switch(
         path = worktree_manager.switch_worktree(identifier)
 
         console.print(f"[green]Worktree found at:[/green] {path}")
-        console.print(f"\n[cyan]To switch to this worktree, run:[/cyan]")
+        console.print("\n[cyan]To switch to this worktree, run:[/cyan]")
         console.print(f"  cd {path}")
-        console.print(f"  cci")
+        console.print("  cci")
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to switch worktree: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="prune")
 def worktree_prune(
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be pruned without doing it"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", "-n", help="Show what would be pruned without doing it"
+    ),
 ) -> None:
     """Prune worktrees that no longer exist on disk."""
     try:
@@ -389,16 +506,16 @@ def worktree_prune(
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to prune worktrees: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="lock")
 def worktree_lock(
     identifier: str = typer.Argument(..., help="Path or branch name of the worktree to lock"),
-    reason: Optional[str] = typer.Option(None, "--reason", "-r", help="Reason for locking"),
+    reason: str | None = typer.Option(None, "--reason", "-r", help="Reason for locking"),
 ) -> None:
     """Lock a worktree to prevent automatic pruning."""
     try:
@@ -414,10 +531,10 @@ def worktree_lock(
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to lock worktree: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @worktree_app.command(name="unlock")
@@ -436,10 +553,11 @@ def worktree_unlock(
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to unlock worktree: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
+
 
 
 if __name__ == "__main__":

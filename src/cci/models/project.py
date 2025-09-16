@@ -2,9 +2,10 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from cci.utils import get_remote_url, is_git_repo
 
 
 class Project(BaseModel):
@@ -15,8 +16,8 @@ class Project(BaseModel):
     last_opened: datetime = Field(default_factory=datetime.now, description="Last opened timestamp")
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
     worktree_count: int = Field(default=0, description="Number of active worktrees")
-    git_remote: Optional[str] = Field(None, description="Primary git remote URL")
-    description: Optional[str] = Field(None, description="Project description")
+    git_remote: str | None = Field(None, description="Primary git remote URL")
+    description: str | None = Field(None, description="Project description")
 
     @field_validator("path")
     @classmethod
@@ -38,8 +39,11 @@ class Project(BaseModel):
 
     def is_git_repo(self) -> bool:
         """Check if the project is a git repository."""
-        git_dir = self.path / ".git"
-        return git_dir.exists()
+        return is_git_repo(self.path)
+
+    def get_git_remote_url(self, remote_name: str = "origin") -> str | None:
+        """Get the git remote URL for this project."""
+        return get_remote_url(self.path, remote_name)
 
     model_config = {
         "json_encoders": {
@@ -76,5 +80,9 @@ class ProjectConfig(BaseModel):
         require_tests: bool = Field(True, description="Require tests for patches")
         require_review: bool = Field(True, description="Require review before applying")
 
-    prompt: PromptConfig = Field(default_factory=PromptConfig)
-    workflow: WorkflowConfig = Field(default_factory=WorkflowConfig)
+    prompt: "ProjectConfig.PromptConfig" = Field(
+        default_factory=lambda: ProjectConfig.PromptConfig()  # type: ignore[call-arg]
+    )
+    workflow: "ProjectConfig.WorkflowConfig" = Field(
+        default_factory=lambda: ProjectConfig.WorkflowConfig()  # type: ignore[call-arg]
+    )

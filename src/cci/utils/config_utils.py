@@ -1,12 +1,14 @@
 """Configuration utility functions for CCI."""
 
-import toml
+import tomllib
 from pathlib import Path
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, ValidationError
+from typing import Any
+
+import tomli_w
+from pydantic import BaseModel
 
 
-def load_config(config_path: Path) -> Dict[str, Any]:
+def load_config(config_path: Path) -> dict[str, Any]:
     """Load configuration from a TOML file.
 
     Args:
@@ -22,11 +24,11 @@ def load_config(config_path: Path) -> Dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-    with open(config_path, "r") as f:
-        return toml.load(f)
+    with open(config_path, "rb") as f:
+        return tomllib.load(f)
 
 
-def save_config(config_path: Path, config: Dict[str, Any]) -> None:
+def save_config(config_path: Path, config: dict[str, Any]) -> None:
     """Save configuration to a TOML file.
 
     Args:
@@ -39,8 +41,8 @@ def save_config(config_path: Path, config: Dict[str, Any]) -> None:
     # Filter out None values for TOML compatibility
     cleaned_config = _clean_config_for_toml(config)
 
-    with open(config_path, "w") as f:
-        toml.dump(cleaned_config, f)
+    with open(config_path, "wb") as f:
+        tomli_w.dump(cleaned_config, f)
 
 
 def _clean_config_for_toml(config: Any) -> Any:
@@ -60,7 +62,7 @@ def _clean_config_for_toml(config: Any) -> Any:
         return config
 
 
-def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
+def merge_configs(*configs: dict[str, Any]) -> dict[str, Any]:
     """Merge multiple configuration dictionaries.
 
     Later configs override earlier ones.
@@ -71,13 +73,13 @@ def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Merged configuration dictionary
     """
-    result = {}
+    result: dict[str, Any] = {}
     for config in configs:
         result = _deep_merge(result, config)
     return result
 
 
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Deep merge two dictionaries.
 
     Args:
@@ -98,7 +100,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
     return result
 
 
-def validate_config(config: Dict[str, Any], model: type[BaseModel]) -> BaseModel:
+def validate_config(config: dict[str, Any], model: type[BaseModel]) -> BaseModel:
     """Validate configuration against a Pydantic model.
 
     Args:
@@ -135,7 +137,7 @@ def get_project_config_path(project_path: Path) -> Path:
     return project_path / ".cci" / "config.toml"
 
 
-def load_project_config(project_path: Path) -> Dict[str, Any]:
+def load_project_config(project_path: Path) -> dict[str, Any]:
     """Load merged configuration for a project.
 
     Loads global config and merges with project-specific config.
@@ -168,7 +170,7 @@ def load_project_config(project_path: Path) -> Dict[str, Any]:
     return merge_configs(*configs) if configs else {}
 
 
-def create_default_config(path: Optional[Path] = None) -> None:
+def create_default_config(path: Path | None = None) -> None:
     """Create a default configuration file.
 
     Args:
@@ -179,6 +181,14 @@ def create_default_config(path: Optional[Path] = None) -> None:
         path = get_default_config_path()
 
     default_config = {
+        "ai": {
+            "provider": "claude-code",
+            "model": "claude-code",
+            "api_key_env": "ANTHROPIC_API_KEY",
+            "max_tokens": 4000,
+            "temperature": 0.7,
+            "timeout": 60,
+        },
         "ui": {
             "theme": "monokai",
             "editor_mode": "normal",

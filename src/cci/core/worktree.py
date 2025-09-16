@@ -1,12 +1,10 @@
 """Git worktree management functionality for CCI."""
 
-import subprocess
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
-from git import Repo, GitCommandError
+from git import GitCommandError, Repo
 from pydantic import BaseModel, Field, validator
 
 
@@ -22,7 +20,7 @@ class WorktreeStatus(Enum):
 class WorktreeInfo:
     """Information about a git worktree."""
     path: Path
-    branch: Optional[str]
+    branch: str | None
     commit: str
     status: WorktreeStatus
     is_bare: bool = False
@@ -64,8 +62,8 @@ class GitWorktree:
     def create_worktree(
         self,
         path: Path,
-        branch: Optional[str] = None,
-        new_branch: Optional[str] = None,
+        branch: str | None = None,
+        new_branch: str | None = None,
         force: bool = False,
         checkout: bool = True,
     ) -> WorktreeInfo:
@@ -114,7 +112,7 @@ class GitWorktree:
         # Get info about the created worktree
         return self._get_worktree_info(path)
 
-    def list_worktrees(self, include_main: bool = True) -> List[WorktreeInfo]:
+    def list_worktrees(self, include_main: bool = True) -> list[WorktreeInfo]:
         """List all worktrees for the repository.
 
         Args:
@@ -130,7 +128,7 @@ class GitWorktree:
             raise RuntimeError(f"Failed to list worktrees: {e}") from e
 
         worktrees = []
-        current_worktree = {}
+        current_worktree: dict[str, str] = {}
 
         for line in output.strip().split("\n"):
             if not line:
@@ -156,7 +154,7 @@ class GitWorktree:
 
         return worktrees
 
-    def _parse_worktree_entry(self, entry: Dict[str, str]) -> WorktreeInfo:
+    def _parse_worktree_entry(self, entry: dict[str, str]) -> WorktreeInfo:
         """Parse a worktree entry from git worktree list --porcelain output."""
         path = Path(entry.get("worktree", ""))
         branch = entry.get("branch", "").replace("refs/heads/", "") if "branch" in entry else None
@@ -183,7 +181,7 @@ class GitWorktree:
             is_main=is_main,
         )
 
-    def get_worktree(self, identifier: str) -> Optional[WorktreeInfo]:
+    def get_worktree(self, identifier: str) -> WorktreeInfo | None:
         """Get information about a specific worktree.
 
         Args:
@@ -264,7 +262,7 @@ class GitWorktree:
 
         return worktree.path
 
-    def prune_worktrees(self, dry_run: bool = False) -> List[Path]:
+    def prune_worktrees(self, dry_run: bool = False) -> list[Path]:
         """Prune worktrees that no longer exist on disk.
 
         Args:
@@ -293,7 +291,7 @@ class GitWorktree:
 
         return pruned
 
-    def lock_worktree(self, identifier: str, reason: Optional[str] = None) -> bool:
+    def lock_worktree(self, identifier: str, reason: str | None = None) -> bool:
         """Lock a worktree to prevent automatic pruning.
 
         Args:
@@ -337,7 +335,7 @@ class GitWorktree:
         except GitCommandError as e:
             raise RuntimeError(f"Failed to unlock worktree: {e}") from e
 
-    def repair_worktree(self, identifier: Optional[str] = None) -> bool:
+    def repair_worktree(self, identifier: str | None = None) -> bool:
         """Repair worktree administrative files if they've been moved.
 
         Args:
@@ -383,7 +381,7 @@ class WorktreeConfig(BaseModel):
     )
 
     @validator("base_path")
-    def validate_base_path(cls, v: Path) -> Path:
+    def validate_base_path(self, v: Path) -> Path:
         """Ensure base_path is not absolute unless it starts with home."""
         if v.is_absolute() and not str(v).startswith(str(Path.home())):
             raise ValueError("base_path must be relative or under home directory")

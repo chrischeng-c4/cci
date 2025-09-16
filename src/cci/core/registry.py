@@ -1,24 +1,17 @@
 """Project registry management."""
 
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
-import tomli_w
+from typing import Any
 
 from cci.models.project import Project
+from cci.utils import get_remote_url, load_config, save_config
 
 
 class ProjectRegistry:
     """Manages the registry of projects."""
 
-    def __init__(self, config_dir: Optional[Path] = None):
+    def __init__(self, config_dir: Path | None = None):
         """Initialize the project registry.
 
         Args:
@@ -35,18 +28,16 @@ class ProjectRegistry:
         if not self.registry_file.exists():
             self._save_registry({"projects": {}})
 
-    def _load_registry(self) -> dict:
+    def _load_registry(self) -> dict[str, Any]:
         """Load the registry from disk."""
         try:
-            with open(self.registry_file, "rb") as f:
-                return tomllib.load(f)
+            return load_config(self.registry_file)
         except Exception:
             return {"projects": {}}
 
-    def _save_registry(self, data: dict) -> None:
+    def _save_registry(self, data: dict[str, Any]) -> None:
         """Save the registry to disk."""
-        with open(self.registry_file, "wb") as f:
-            tomli_w.dump(data, f)
+        save_config(self.registry_file, data)
 
     def add_project(self, name: str, path: Path) -> Project:
         """Add a new project to the registry.
@@ -64,23 +55,9 @@ class ProjectRegistry:
             path=path,
             last_opened=datetime.now(),
             created_at=datetime.now(),
+            git_remote=get_remote_url(path),
+            description=None,
         )
-
-        # Check if it's a git repo
-        if (path / ".git").exists():
-            # Try to get remote URL
-            try:
-                import subprocess
-                result = subprocess.run(
-                    ["git", "remote", "get-url", "origin"],
-                    cwd=path,
-                    capture_output=True,
-                    text=True,
-                )
-                if result.returncode == 0:
-                    project.git_remote = result.stdout.strip()
-            except Exception:
-                pass
 
         registry = self._load_registry()
         project_data = {
@@ -101,7 +78,7 @@ class ProjectRegistry:
 
         return project
 
-    def get_project(self, name: str) -> Optional[Project]:
+    def get_project(self, name: str) -> Project | None:
         """Get a project by name.
 
         Args:

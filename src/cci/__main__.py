@@ -2,9 +2,11 @@
 
 import sys
 from pathlib import Path
+
 from cci.cli import app
 
-def main():
+
+def main() -> None:
     """Main entry point that handles both direct paths and commands."""
     # Check if we have any arguments
     if len(sys.argv) > 1:
@@ -16,7 +18,7 @@ def main():
         # If first argument is not a known command and doesn't start with -, treat as path
         if first_arg not in commands and not first_arg.startswith('-'):
             # Check if it looks like a file or directory path
-            path = Path(first_arg)
+            Path(first_arg)
 
             # Insert 'open' command before the path
             sys.argv.insert(1, 'open')

@@ -1,11 +1,11 @@
 """File utility functions for CCI."""
 
-import chardet
 from pathlib import Path
-from typing import Optional, Tuple
+
+import chardet
 
 
-def read_file_safe(file_path: Path, encoding: Optional[str] = None) -> Tuple[str, str]:
+def read_file_safe(file_path: Path, encoding: str | None = None) -> tuple[str, str]:
     """Safely read a file with automatic encoding detection.
 
     Args:
@@ -82,7 +82,7 @@ def get_file_encoding(file_path: Path) -> str:
         None: "utf-8",  # Default if detection fails
     }
 
-    return encoding_map.get(encoding, encoding)
+    return encoding_map.get(encoding, encoding or "utf-8")
 
 
 def format_file_size(size_bytes: int) -> str:
@@ -94,10 +94,178 @@ def format_file_size(size_bytes: int) -> str:
     Returns:
         Formatted size string (e.g., "1.5 MB")
     """
+    size: float = float(size_bytes)
     for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size_bytes < 1024.0:
+        if size < 1024.0:
             if unit == "B":
-                return f"{size_bytes} {unit}"
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} PB"
+                return f"{int(size)} {unit}"
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} PB"
+
+
+def get_file_info(file_path: Path) -> dict[str, str]:
+    """Get comprehensive file information.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Dictionary with file information
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    stat = file_path.stat()
+
+    return {
+        "name": file_path.name,
+        "size": format_file_size(stat.st_size),
+        "size_bytes": str(stat.st_size),
+        "modified": str(stat.st_mtime),
+        "permissions": oct(stat.st_mode)[-3:],
+        "is_file": str(file_path.is_file()),
+        "is_dir": str(file_path.is_dir()),
+        "suffix": file_path.suffix,
+        "encoding": get_file_encoding(file_path) if file_path.is_file() else "N/A",
+    }
+
+
+def ensure_directory(dir_path: Path) -> None:
+    """Ensure a directory exists, creating it if necessary.
+
+    Args:
+        dir_path: Path to the directory
+    """
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+
+def copy_file_safe(src: Path, dst: Path, overwrite: bool = False) -> bool:
+    """Safely copy a file with error handling.
+
+    Args:
+        src: Source file path
+        dst: Destination file path
+        overwrite: Whether to overwrite existing files
+
+    Returns:
+        True if copy was successful, False otherwise
+    """
+    import shutil
+
+    if not src.exists():
+        return False
+
+    if dst.exists() and not overwrite:
+        return False
+
+    try:
+        # Ensure destination directory exists
+        dst.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy the file
+        shutil.copy2(src, dst)
+        return True
+    except Exception:
+        return False
+
+
+def find_files_by_pattern(directory: Path, pattern: str, recursive: bool = True) -> list[Path]:
+    """Find files matching a glob pattern.
+
+    Args:
+        directory: Directory to search in
+        pattern: Glob pattern to match
+        recursive: Whether to search recursively
+
+    Returns:
+        List of matching file paths
+    """
+    if not directory.exists():
+        return []
+
+    if recursive:
+        return list(directory.rglob(pattern))
+    else:
+        return list(directory.glob(pattern))
+
+
+def get_language_from_extension(extension: str) -> str | None:
+    """Get programming language from file extension.
+
+    Args:
+        extension: File extension (with or without leading dot)
+
+    Returns:
+        Language name if detected, None otherwise
+    """
+    # Normalize extension
+    if not extension:
+        return None
+
+    ext = extension.lower()
+    if not ext.startswith('.'):
+        ext = '.' + ext
+
+    # Language mapping
+    language_map = {
+        '.py': 'python',
+        '.js': 'javascript',
+        '.jsx': 'javascript',
+        '.ts': 'typescript',
+        '.tsx': 'typescript',
+        '.java': 'java',
+        '.cpp': 'cpp',
+        '.cc': 'cpp',
+        '.cxx': 'cpp',
+        '.c': 'c',
+        '.h': 'c',
+        '.hpp': 'cpp',
+        '.cs': 'csharp',
+        '.go': 'go',
+        '.rs': 'rust',
+        '.php': 'php',
+        '.rb': 'ruby',
+        '.swift': 'swift',
+        '.kt': 'kotlin',
+        '.scala': 'scala',
+        '.r': 'r',
+        '.m': 'matlab',
+        '.pl': 'perl',
+        '.sh': 'bash',
+        '.bash': 'bash',
+        '.zsh': 'bash',
+        '.fish': 'bash',
+        '.ps1': 'powershell',
+        '.sql': 'sql',
+        '.html': 'html',
+        '.htm': 'html',
+        '.css': 'css',
+        '.scss': 'scss',
+        '.sass': 'sass',
+        '.less': 'less',
+        '.xml': 'xml',
+        '.json': 'json',
+        '.yaml': 'yaml',
+        '.yml': 'yaml',
+        '.toml': 'toml',
+        '.ini': 'ini',
+        '.cfg': 'ini',
+        '.conf': 'ini',
+        '.md': 'markdown',
+        '.markdown': 'markdown',
+        '.rst': 'rst',
+        '.tex': 'latex',
+        '.vim': 'vim',
+        '.lua': 'lua',
+        '.dockerfile': 'dockerfile',
+        '.makefile': 'makefile',
+        '.cmake': 'cmake',
+        '.gradle': 'gradle',
+        '.maven': 'maven',
+        '.properties': 'properties',
+        '.gitignore': 'gitignore',
+        '.gitattributes': 'gitattributes',
+    }
+
+    return language_map.get(ext)

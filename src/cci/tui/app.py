@@ -1,18 +1,17 @@
 """Main TUI application for CCI."""
 
 from pathlib import Path
-from typing import Optional
 
-from textual.app import App, ComposeResult
+from textual.app import App
 from textual.binding import Binding
 
 from cci import __version__
-from cci.tui.screens.welcome import WelcomeScreen
-from cci.tui.screens.file_viewer import FileViewerScreen
 from cci.tui.screens.directory_browser import DirectoryBrowserScreen
+from cci.tui.screens.file_viewer import FileViewerScreen
+from cci.tui.screens.welcome import WelcomeScreen
 
 
-class CCIApp(App):
+class CCIApp(App[None]):
     """Main CCI TUI Application."""
 
     CSS = """
@@ -28,9 +27,9 @@ class CCIApp(App):
 
     def __init__(
         self,
-        file_path: Optional[Path] = None,
-        directory_path: Optional[Path] = None,
-        project_path: Optional[Path] = None,  # Keep for backward compatibility
+        file_path: Path | None = None,
+        directory_path: Path | None = None,
+        project_path: Path | None = None,  # Keep for backward compatibility
     ):
         """Initialize the CCI application.
 

@@ -1,7 +1,6 @@
 """Directory browser screen for CCI."""
 
 from pathlib import Path
-from typing import Optional
 
 from textual import on
 from textual.app import ComposeResult
@@ -9,9 +8,10 @@ from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, DirectoryTree, Footer, Header, Label, Static
+from textual.widgets.tree import NodeID
 
 
-class DirectoryBrowserScreen(Screen):
+class DirectoryBrowserScreen(Screen[None]):
     """Screen for browsing directories and files."""
 
     CSS = """
@@ -78,7 +78,7 @@ class DirectoryBrowserScreen(Screen):
         self,
         directory_path: Path,
         show_hidden: bool = False,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> None:
         """Initialize the directory browser screen.
 
@@ -90,8 +90,8 @@ class DirectoryBrowserScreen(Screen):
         super().__init__(name=name)
         self.directory_path = directory_path.resolve()
         self.show_hidden = show_hidden
-        self.directory_tree: Optional[DirectoryTree] = None
-        self.selected_path: Optional[Path] = None
+        self.directory_tree: DirectoryTree | None = None
+        self.selected_path: Path | None = None
 
     def compose(self) -> ComposeResult:
         """Compose the directory browser UI."""
@@ -107,9 +107,7 @@ class DirectoryBrowserScreen(Screen):
             # Directory tree container
             with Container(id="tree-container"):
                 self.directory_tree = DirectoryTree(
-                    self.directory_path,
-                    show_root=True,
-                    show_guides=True,
+                    self.directory_path
                 )
                 # Set show_hidden after creation
                 if hasattr(self.directory_tree, 'show_hidden'):
@@ -157,11 +155,12 @@ class DirectoryBrowserScreen(Screen):
 
     def _format_size(self, size: int) -> str:
         """Format file size in human-readable format."""
+        size_float: float = float(size)
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
+            if size_float < 1024.0:
+                return f"{size_float:.1f} {unit}"
+            size_float /= 1024.0
+        return f"{size_float:.1f} PB"
 
     def on_mount(self) -> None:
         """Called when the screen is mounted."""
@@ -226,7 +225,7 @@ class DirectoryBrowserScreen(Screen):
             # Expand/collapse directory in tree
             if self.directory_tree:
                 # Find the node and toggle it
-                node = self.directory_tree.get_node_by_id(str(path))
+                node = self.directory_tree.get_node_by_id(NodeID(str(path)))
                 if node:
                     if node.is_expanded:
                         node.collapse()
