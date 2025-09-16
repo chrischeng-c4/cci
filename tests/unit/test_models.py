@@ -85,13 +85,15 @@ class TestProjectModel:
 
     def test_is_git_repo(self, temp_dir):
         """Test git repository detection."""
+        from git import Repo
+
         project = Project(name="test", path=temp_dir)
 
         # Should not be a git repo initially
         assert not project.is_git_repo()
 
-        # Create .git directory
-        (temp_dir / ".git").mkdir()
+        # Create a proper git repository
+        Repo.init(temp_dir)
         assert project.is_git_repo()
 
 

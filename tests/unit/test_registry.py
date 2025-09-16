@@ -1,9 +1,6 @@
 """Tests for project registry."""
 
 from datetime import datetime
-from pathlib import Path
-
-import pytest
 
 from cci.core.registry import ProjectRegistry
 from cci.models.project import Project

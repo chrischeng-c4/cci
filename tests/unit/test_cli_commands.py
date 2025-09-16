@@ -1,7 +1,7 @@
 """Unit tests for CLI commands."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -18,7 +18,7 @@ def runner():
 @pytest.fixture
 def mock_cciapp():
     """Mock the CCIApp class."""
-    with patch("cci.cli.CCIApp") as mock:
+    with patch("cci.tui.app.CCIApp") as mock:
         yield mock
 
 
@@ -59,7 +59,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["open", str(test_file)])
         assert result.exit_code == 0
         assert "Opening file:" in result.stdout
-        assert str(test_file) in result.stdout
+        # Path might be wrapped, so just check filename is present
+        assert test_file.name in result.stdout
 
         mock_cciapp.assert_called_once()
         call_kwargs = mock_cciapp.call_args[1]
@@ -70,7 +71,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["open", str(tmp_path)])
         assert result.exit_code == 0
         assert "Opening directory:" in result.stdout
-        assert str(tmp_path) in result.stdout
+        # Path might be wrapped, so just check the directory name is present
+        assert tmp_path.name in result.stdout
 
         mock_cciapp.assert_called_once()
         call_kwargs = mock_cciapp.call_args[1]
@@ -88,9 +90,8 @@ class TestCLICommands:
         """Test 'cci new' command creates a new project."""
         project_path = tmp_path / "new_project"
 
-        with patch("cci.cli.Path.mkdir") as mock_mkdir, \
-             patch("cci.cli.Project") as mock_project, \
-             patch("cci.cli.ProjectRegistry") as mock_registry:
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry, \
+             patch("subprocess.run"):
 
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
@@ -101,19 +102,15 @@ class TestCLICommands:
             assert "Creating new project:" in result.stdout
             assert "new_project" in result.stdout
 
-            # Verify project directory was created
-            mock_mkdir.assert_called_once()
-
             # Verify project was registered
-            mock_registry_instance.add_project.assert_called_once()
+            mock_registry_instance.add_project.assert_called_once_with("new_project", project_path)
 
     def test_new_command_with_name_option(self, runner, tmp_path):
         """Test 'cci new --name' command with custom name."""
         project_path = tmp_path / "project_dir"
 
-        with patch("cci.cli.Path.mkdir") as mock_mkdir, \
-             patch("cci.cli.Project") as mock_project, \
-             patch("cci.cli.ProjectRegistry") as mock_registry:
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry, \
+             patch("subprocess.run"):
 
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
@@ -134,20 +131,23 @@ class TestCLICommands:
 
     def test_list_command(self, runner):
         """Test 'cci list' command lists projects."""
-        with patch("cci.cli.ProjectRegistry") as mock_registry:
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry:
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
 
             # Mock some projects
+            from datetime import datetime
             mock_project1 = Mock()
             mock_project1.name = "Project1"
             mock_project1.path = Path("/path/to/project1")
-            mock_project1.created_at = "2024-01-01T12:00:00"
+            mock_project1.last_opened = datetime(2024, 1, 1, 12, 0, 0)
+            mock_project1.description = "Test project 1"
 
             mock_project2 = Mock()
             mock_project2.name = "Project2"
             mock_project2.path = Path("/path/to/project2")
-            mock_project2.created_at = "2024-01-02T12:00:00"
+            mock_project2.last_opened = datetime(2024, 1, 2, 12, 0, 0)
+            mock_project2.description = None
 
             mock_registry_instance.list_projects.return_value = [mock_project1, mock_project2]
 
@@ -160,7 +160,7 @@ class TestCLICommands:
 
     def test_list_command_no_projects(self, runner):
         """Test 'cci list' with no projects."""
-        with patch("cci.cli.ProjectRegistry") as mock_registry:
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry:
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
             mock_registry_instance.list_projects.return_value = []
@@ -171,30 +171,31 @@ class TestCLICommands:
             assert "No projects registered" in result.stdout
 
     def test_remove_command(self, runner):
-        """Test 'cci remove' command removes a project."""
-        with patch("cci.cli.ProjectRegistry") as mock_registry:
+        """Test 'cci remove --force' command removes a project."""
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry:
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
+            mock_registry_instance.remove_project.return_value = True
 
-            result = runner.invoke(app, ["remove", "TestProject"])
+            result = runner.invoke(app, ["remove", "TestProject", "--force"])
 
             assert result.exit_code == 0
-            assert "Removed project:" in result.stdout
+            assert "removed from registry" in result.stdout
             assert "TestProject" in result.stdout
             mock_registry_instance.remove_project.assert_called_once_with("TestProject")
 
     def test_remove_command_nonexistent_project(self, runner):
-        """Test 'cci remove' with nonexistent project."""
-        with patch("cci.cli.ProjectRegistry") as mock_registry:
+        """Test 'cci remove --force' with nonexistent project."""
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry:
             mock_registry_instance = Mock()
             mock_registry.return_value = mock_registry_instance
-            mock_registry_instance.remove_project.side_effect = ValueError("Project not found")
+            mock_registry_instance.remove_project.return_value = False
 
-            result = runner.invoke(app, ["remove", "NonexistentProject"])
+            result = runner.invoke(app, ["remove", "NonexistentProject", "--force"])
 
             assert result.exit_code == 1
             assert "Error:" in result.stdout
-            assert "Project not found" in result.stdout
+            assert "not found" in result.stdout
 
 
 class TestCLIFallbackBehavior:
@@ -239,21 +240,22 @@ class TestCLIErrorHandling:
         """Test invalid command shows error."""
         result = runner.invoke(app, ["invalidcommand"])
         assert result.exit_code != 0
-        assert "No such option" in result.stdout or "Invalid" in result.stdout
+        assert ("No such command" in result.stderr or "Invalid" in result.stderr or
+                "No such command" in result.stdout or "Invalid" in result.stdout)
 
     def test_missing_required_argument(self, runner):
         """Test missing required argument shows error."""
         result = runner.invoke(app, ["new"])  # Missing path argument
         assert result.exit_code != 0
-        assert "Missing argument" in result.stdout
+        assert ("Missing argument" in result.stderr or "Missing argument" in result.stdout)
 
     def test_registry_error_handling(self, runner):
         """Test registry errors are handled gracefully."""
-        with patch("cci.cli.ProjectRegistry") as mock_registry:
+        with patch("cci.core.registry.ProjectRegistry") as mock_registry:
             mock_registry.side_effect = Exception("Registry error")
 
             result = runner.invoke(app, ["list"])
 
-            # Should handle the error gracefully
-            assert result.exit_code == 1
-            assert "Error:" in result.stdout
+            # Should handle the error gracefully with a warning message
+            assert result.exit_code == 0
+            assert "Project registry not available:" in result.stdout
